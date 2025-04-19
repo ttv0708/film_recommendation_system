@@ -1,6 +1,5 @@
 #BlueJ class context
 comment0.target=FourthRatings
-comment0.text=\r\n\ Class\ created\ for\ this\ assignment\ StepFour\r\n\ \r\n\ @author\ (Abraham\ Ferrero)\ \r\n\ @version\ (29/1/2018)\r\n
 comment1.params=
 comment1.target=FourthRatings()
 comment10.params=id\ numSimilarRaters\ minimalRaters

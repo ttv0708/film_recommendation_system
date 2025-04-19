@@ -1,10 +1,3 @@
-
-/**
- * Write a description of RecommendationRunner here.
- * 
- * @author (your name) 
- * @version (a version number or a date)
- */
 import java.util.*;
 import java.io.*;
 
@@ -30,6 +23,9 @@ public class RecommendationRunner implements Recommender {
         return random10;
     };
 
+    public void saveRatedItems(String webRaterID){
+        
+    }
     
     public void printRecommendationsFor(String webRaterID) {
         FourthRatings fourthrating = new FourthRatings();

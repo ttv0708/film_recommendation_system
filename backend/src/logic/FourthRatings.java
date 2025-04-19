@@ -1,10 +1,5 @@
 import java.util.*;
-/**
- * Class created for this assignment StepFour
- * 
- * @author (Abraham Ferrero) 
- * @version (29/1/2018)
- */
+
 public class FourthRatings {
     //As we can see, every instance variable has been eliminated as requested
     public FourthRatings() {

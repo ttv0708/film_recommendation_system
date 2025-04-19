@@ -1,14 +1,9 @@
-
-/**
- * Write a description of RaterDatabase here.
- * 
- * @author (your name) 
- * @version (a version number or a date)
- */
-
-import edu.duke.*;
 import java.util.*;
 import org.apache.commons.csv.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.StringTokenizer;
 
 public class RaterDatabase {
     private static HashMap<String,Rater> ourRaters;
@@ -29,16 +24,23 @@ public class RaterDatabase {
      }    
     
     public static void addRatings(String filename) {
-        initialize(); 
-        FileResource fr = new FileResource(filename);
-        CSVParser csvp = fr.getCSVParser();
-        for(CSVRecord rec : csvp) {
-                String id = rec.get("rater_id");
-                String item = rec.get("movie_id");
-                String rating = rec.get("rating");
-                addRaterRating(id,item,Double.parseDouble(rating));
-        } 
+    initialize(); 
+    try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+        String line;
+        while ((line = br.readLine()) != null) {
+            // Assuming CSV is comma-separated, split the line into tokens
+            StringTokenizer st = new StringTokenizer(line, ",");
+            if (st.countTokens() >= 3) {
+                String id = st.nextToken().trim(); // rater_id
+                String item = st.nextToken().trim(); // movie_id
+                String rating = st.nextToken().trim(); // rating
+                addRaterRating(id, item, Double.parseDouble(rating));
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace(); // Handle file reading errors
     }
+}
     
     public static void addRaterRating(String raterID, String movieID, double rating) {
         initialize(); 
