@@ -1,6 +1,4 @@
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.*;
 
 public class MovieRunnerAverage {
@@ -32,5 +30,21 @@ public class MovieRunnerAverage {
         String id1 = secondRating.getID("Vacation");
         double avg1 = secondRating.getAverageByID(id1,1);
         System.out.println("Vacation average rating: " + avg1);
+    }
+
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Thiếu movieID");
+            return;
+        }
+        String movieID = args[0];
+        SecondRatings secondRatings = new SecondRatings("./data/ratedmoviesfull.csv", "./data/ratings.csv");
+        double avg = secondRatings.getAverageByID(movieID,1);
+       
+        if (avg == 0.0) {
+            System.out.println("Movie ID " + movieID + " chưa được đánh giá.");
+        } else {
+            System.out.println("{\"movieID\": \"" + movieID + "\", \"avgRating\": " + avg + "}");
+        }
     }
 }

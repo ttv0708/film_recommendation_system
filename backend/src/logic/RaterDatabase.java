@@ -1,9 +1,7 @@
 import java.util.*;
-import org.apache.commons.csv.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.StringTokenizer;
 
 public class RaterDatabase {
     private static HashMap<String,Rater> ourRaters;
@@ -27,18 +25,28 @@ public class RaterDatabase {
     initialize(); 
     try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
         String line;
+        boolean isFirstLine = true;
         while ((line = br.readLine()) != null) {
-            // Assuming CSV is comma-separated, split the line into tokens
+            if (isFirstLine) {
+                isFirstLine = false;
+                continue; // Bỏ qua dòng đầu tiên (header)
+            }
+
             StringTokenizer st = new StringTokenizer(line, ",");
             if (st.countTokens() >= 3) {
-                String id = st.nextToken().trim(); // rater_id
-                String item = st.nextToken().trim(); // movie_id
+                String id = st.nextToken().trim();     // rater_id
+                String item = st.nextToken().trim();   // movie_id
                 String rating = st.nextToken().trim(); // rating
-                addRaterRating(id, item, Double.parseDouble(rating));
+
+                try {
+                    addRaterRating(id, item, Double.parseDouble(rating));
+                } catch (NumberFormatException e) {
+                    System.err.println("Không thể chuyển '" + rating + "' thành số. Dòng: " + line);
+                }
             }
         }
     } catch (IOException e) {
-        e.printStackTrace(); // Handle file reading errors
+        e.printStackTrace();
     }
 }
     
@@ -71,7 +79,21 @@ public class RaterDatabase {
     public static int size() {
         return ourRaters.size();
     }
-    
-    
-        
+
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Thiếu webRaterID");
+            return;
+        }
+        String webRaterID = args[0];
+        Rater r = RaterDatabase.getRater(webRaterID);
+       
+        if (r == null) {
+            System.out.println("Không tìm thấy người dùng có ID: " + webRaterID);
+        } else {
+            for (Rating rating : r.getRatingList().values()){
+                System.out.println(MovieDatabase.getMovie(rating.getItem()).toString() + ", rating= " + rating.getValue());
+            }
+        }
+    }
 }

@@ -7,25 +7,87 @@
     <title>Document</title>
 </head>
 <body>
-    <h1>Phim gợi ý:</h1>
-    <table style="width:90%">
-        <thead>
-            <tr>
-                <th style="width:10%">ID</th>
-                <th style="width:10%">Title</th>
-                <th style="width:10%">Poster</th>
-                <th style="width:10%">Year</th>
-                <th style="width:10%">Genres</th>
-                <th style="width:10%">Country</th>
-                <th style="width:10%">Directors</th>
-                <th style="width:10%">Minutes</th>
-            </tr>
-        </thead>
-        <tbody id="movie-table-body">
-            <!-- Danh sách phim sẽ được thêm tại đây -->
-        </tbody>
-    </table>
-    <ul id="recommendation-list"></ul>
+    <div class="tab-container">
+        <button class="tab-button" onclick="openTab('tab1')">Đánh giá phim</button>
+        <button class="tab-button" onclick="openTab('tab2')">Đánh giá của tôi</button>
+        <button class="tab-button" onclick="openTab('tab3')">Phim đề xuất</button>
+    </div>
+
+    <div id="tab1" class="tab-content">
+        <h1>Đánh giá phim</h1>
+        <table style="width:90%">
+            <thead>
+                <tr>
+                    <th style="width:10%">ID</th>
+                    <th style="width:10%">Title</th>
+                    <th style="width:10%">Poster</th>
+                    <th style="width:10%">Year</th>
+                    <th style="width:10%">Genres</th>
+                    <th style="width:10%">Country</th>
+                    <th style="width:10%">Directors</th>
+                    <th style="width:10%">Minutes</th>
+                    <th style="width:10%">Rating</th>
+                </tr>
+            </thead>
+            <tbody id="movie-table-body">
+                <!-- Danh sách phim sẽ được thêm tại đây -->
+            </tbody>
+        </table>
+        <ul id="recommendation-list"></ul>
+        <div style="text-align: center; margin-top: 20px;">
+            <button id="submit-all" style="padding: 10px 20px; font-size: 16px;">Gửi tất cả đánh giá</button>
+        </div>
+    </div>
+
+    <div id="tab2" class="tab-content">
+        <h1>Đánh giá của tôi</h1>
+        <table style="width:90%">
+            <thead>
+                <tr>
+                    <th style="width:10%">ID</th>
+                    <th style="width:10%">Title</th>
+                    <th style="width:10%">Poster</th>
+                    <th style="width:10%">Year</th>
+                    <th style="width:10%">Genres</th>
+                    <th style="width:10%">Country</th>
+                    <th style="width:10%">Directors</th>
+                    <th style="width:10%">Minutes</th>
+                    <th style="width:10%">Rating</th>
+                </tr>
+            </thead>
+            <tbody id="movie-my-ratings-table">
+                <!-- Danh sách phim sẽ được thêm tại đây -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="tab3" class="tab-content">
+        <h1>Phim đề xuất</h1>
+        <table style="width:90%">
+            <thead>
+                <tr>
+                    <th style="width:10%">ID</th>
+                    <th style="width:10%">Title</th>
+                    <th style="width:10%">Poster</th>
+                    <th style="width:10%">Year</th>
+                    <th style="width:10%">Genres</th>
+                    <th style="width:10%">Country</th>
+                    <th style="width:10%">Directors</th>
+                    <th style="width:10%">Minutes</th>
+                    <th style="width:10%">Average Rating</th>
+                </tr>
+            </thead>
+            <tbody id="movie-recommendation-table">
+                <!-- Danh sách phim sẽ được thêm tại đây -->
+            </tbody>
+        </table>
+    </div>  
+    
     <script src="app.js"></script>
+    <!-- <script>
+        window.onload = function() {
+            openTab('tab1');
+        };
+    </script> -->
 </body>
 </html>

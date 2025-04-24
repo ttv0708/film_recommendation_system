@@ -6,7 +6,7 @@ public class SecondRatings extends FirstRatings {
     
     public SecondRatings() {
         // default constructor
-        this("ratedmoviesfull.csv", "ratings.csv");
+        this("./data/ratedmoviesfull.csv", "./data/ratings.csv");
     }
     
     public SecondRatings(String moviefile,String ratingsfile) {
