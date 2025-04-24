@@ -4,8 +4,10 @@ const { exec } = require('child_process');
 const fetchMoviePoster = require('./src/fetchMoviePoster');
 const app = express();
 const port = 3000;
+const csv = require('csv-parser');
 
 app.use(cors());
+
 
 // Hàm chuyển đổi dữ liệu phim thành JSON
 function convertMoviesToJSON(moviesData) {
@@ -196,50 +198,49 @@ app.get('/recommend', (req, res) => {
 
 
 app.get('/api/get-recommendations/:user_id', async (req, res) => {
-    const raterId = req.params.user_id;
-    const command = `java -cp "recommend.jar;lib/commons-csv-1.10.0.jar" RecommendationRunner ${raterId}`;
+  const raterId = req.params.user_id;
+  const command = `java -cp "recommend.jar;lib/commons-csv-1.10.0.jar" RecommendationRunner ${raterId}`;
 
-    exec(command, async (error, stdout, stderr) => {
-        if (error) {
-            console.error(`exec error: ${error}`);
-            return res.status(500).json({ error: 'Lỗi khi chạy RecommendationRunner' });
-        }
+  exec(command, async (error, stdout, stderr) => {
+      if (error) {
+          console.error(`exec error: ${error}`);
+          return res.status(500).json({ error: 'Lỗi khi chạy RecommendationRunner' });
+      }
 
-        const moviesList = stdout.trim().split('\n');
-        const moviesJSON = convertMoviesToJSON(moviesList);
+      const moviesList = stdout.trim().split('\n');
+      const moviesJSON = convertMoviesToJSON(moviesList);
 
-        try {
-            // Gọi Java để lấy avgRating từng phim
-            const enrichedMovies = await Promise.all(moviesJSON.map(movie => {
-                return new Promise((resolve, reject) => {
-                    const cmd = `java -cp "recommend.jar;lib/commons-csv-1.10.0.jar" MovieRunnerAverage ${movie.id}`;
-                    exec(cmd, (err, avgOut, avgErr) => {
-                        if (err) {
-                            console.error(`Error getting avgRating for ${movie.id}:`, err);
-                            return resolve({ ...movie, avgRating: null }); // fallback
-                        }
+      try {
+          // Gọi Java để lấy avgRating từng phim
+          const enrichedMovies = await Promise.all(moviesJSON.map(movie => {
+              return new Promise((resolve, reject) => {
+                  const cmd = `java -cp "recommend.jar;lib/commons-csv-1.10.0.jar" MovieRunnerAverage ${movie.id}`;
+                  exec(cmd, (err, avgOut, avgErr) => {
+                      if (err) {
+                          console.error(`Error getting avgRating for ${movie.id}:`, err);
+                          return resolve({ ...movie, avgRating: null }); // fallback
+                      }
 
-                        try {
-                            const avgJson = JSON.parse(avgOut.trim());
-                            resolve({ ...movie, avgRating: avgJson.avgRating });
-                        } catch (parseErr) {
-                            console.error('Lỗi khi parse JSON:', parseErr);
-                            resolve({ ...movie, avgRating: null }); // fallback
-                        }
-                    });
-                });
-            }));
+                      try {
+                          const avgJson = JSON.parse(avgOut.trim());
+                          resolve({ ...movie, avgRating: avgJson.avgRating });
+                      } catch (parseErr) {
+                          console.error('Lỗi khi parse JSON:', parseErr);
+                          resolve({ ...movie, avgRating: null }); // fallback
+                      }
+                  });
+              });
+          }));
 
-            const withPoster = await fetchMoviePoster(enrichedMovies);
-            res.json({ moviesJSON: withPoster });
+          const withPoster = await fetchMoviePoster(enrichedMovies);
+          res.json({ moviesJSON: withPoster });
 
-        } catch (err) {
-            console.error('Lỗi khi xử lý movie list:', err);
-            res.status(500).send('Không thể xử lý danh sách phim.');
-        }
-    });
+      } catch (err) {
+          console.error('Lỗi khi xử lý movie list:', err);
+          res.status(500).send('Không thể xử lý danh sách phim.');
+      }
+  });
 });
-
 
 app.get('/api/get-my-ratings/:user_id', async (req,res)=>{
   const raterId = req.params.user_id;
@@ -267,4 +268,34 @@ app.get('/api/get-my-ratings/:user_id', async (req,res)=>{
   });
 })
 
+function getAllMovies() {
+    return new Promise((resolve, reject) => {
+        const results = [];
+        fs.createReadStream(path.join('./data', 'ratedmoviesfull.csv'))
+            .pipe(csv())
+            .on('data', (data) => results.push(data))
+            .on('end', () => resolve(results))
+            .on('error', reject);
+    });
+}
+
+app.get('/api/search-movie', async (req, res) => {
+  const query = req.query.query?.toLowerCase();
+  if (!query) {
+      return res.status(400).json({ error: 'Thiếu từ khóa tìm kiếm' });
+  }
+
+  try {
+      const movies = await getAllMovies();
+      const matchedMovies = movies.filter(movie =>
+          movie.title.toLowerCase().includes(query)
+      );
+
+      const moviesListWithPoster = await fetchMoviePoster(matchedMovies);
+      res.json({ results: moviesListWithPoster });
+  } catch (err) {
+      console.error('Lỗi khi tìm kiếm phim:', err);
+      res.status(500).json({ error: 'Không thể tìm kiếm phim' });
+  }
+});
 

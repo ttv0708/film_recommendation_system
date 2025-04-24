@@ -165,8 +165,8 @@ function loadMyRatings() {
             });
         })
         .catch(err => {
-            console.error('Lỗi khi lấy gợi ý phim:', err);
-            alert('Không thể lấy gợi ý phim!');
+            console.error('Lỗi khi lấy danh sách phim đã đánh giá:', err);
+            alert('Không thể lấy danh sách phim đã đánh giá!');
         });
 }
 
@@ -187,3 +187,62 @@ function openTab(tabId) {
         loadMyRatings();
     }
 }
+
+document.getElementById('search-button').addEventListener('click', () => {
+    const query = document.getElementById('search-input').value.trim();
+    if (!query) {
+        alert('Vui lòng nhập từ khóa tìm kiếm');
+        return;
+    }
+
+    fetch(`http://localhost:3000/api/search-movie?query=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.getElementById('movie-table-body');
+            tbody.innerHTML = ''; // Xoá kết quả cũ
+
+            if (data.results.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Không tìm thấy phim</td></tr>';
+                return;
+            }
+
+            data.results.forEach((movie, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${movie.id}</td>
+                    <td>${movie.title}</td>
+                    <td>${movie.poster ? `<img src="${movie.poster}" style="max-width:100px"/>` : 'N/A'}</td>
+                    <td>${movie.year}</td>
+                    <td>${movie.genres}</td>
+                    <td>${movie.country}</td>
+                    <td>${movie.directors}</td>
+                    <td>${movie.minutes}</td>
+                    <td class="rating-cell" data-index="${index}"></td>
+                `;
+                tbody.appendChild(tr);
+
+                // Hiển thị 10 sao để đánh giá
+                const ratingCell = tr.querySelector('.rating-cell');
+                for (let i = 1; i <= 10; i++) {
+                    const star = document.createElement('span');
+                    star.innerHTML = '★';
+                    star.style.cursor = 'pointer';
+                    star.style.color = 'gray';
+                    star.dataset.value = i;
+                    star.addEventListener('click', function () {
+                        const stars = ratingCell.querySelectorAll('span');
+                        stars.forEach((s, idx) => {
+                            s.style.color = idx < i ? 'gold' : 'gray';
+                        });
+                        ratings[movie.id] = i;
+                        console.log(`User rated movie ID ${movie.id} with ${i} stars`);
+                    });
+                    ratingCell.appendChild(star);
+                }
+            });
+        })
+        .catch(err => {
+            console.error('Lỗi khi tìm kiếm:', err);
+            alert('Đã xảy ra lỗi khi tìm kiếm phim.');
+        });
+});
