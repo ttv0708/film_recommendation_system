@@ -9,63 +9,56 @@ const csv = require('csv-parser');
 app.use(cors());
 
 
-// Hàm chuyển đổi dữ liệu phim thành JSON
 function convertMoviesToJSON(moviesData) {
-    const moviesJSON = [];
-    
-    moviesData.forEach(movieStr => {
-      // Loại bỏ "Movie [" ở đầu và "]" hoặc "]\r" ở cuối
-      const content = movieStr.replace('Movie [', '').replace(/\]\r?$/, '');
-      
-      const movieObj = {};
-      let currentKey = '';
-      let currentValue = '';
-      let inValue = false;
-      let i = 0;
-      
-      // Phân tích từng trường dữ liệu
-      while (i < content.length) {
-        // Tìm tên trường (key)
-        if (!inValue) {
-          const keyEndIndex = content.indexOf('=', i);
-          if (keyEndIndex !== -1) {
-            currentKey = content.substring(i, keyEndIndex).trim();
-            i = keyEndIndex + 1;
-            inValue = true;
-            currentValue = '';
-          } else {
-            break;
-          }
-        } 
-        // Tìm giá trị của trường (value)
-        else {
-          // Nếu đây là trường cuối cùng, lấy tất cả nội dung còn lại
-          const nextCommaIndex = content.indexOf(', ', i);
-          const nextKeyIndex = nextCommaIndex !== -1 ? 
-            content.indexOf('=', nextCommaIndex) : -1;
-          
-          // Nếu không còn dấu phẩy nào, hoặc đây là trường cuối cùng
-          if (nextCommaIndex === -1 || nextKeyIndex === -1) {
-            currentValue = content.substring(i).trim();
-            // Xử lý các trường đặc biệt
-            processField(movieObj, currentKey, currentValue);
-            break;
-          } else {
-            // Lấy giá trị cho đến dấu phẩy trước key tiếp theo
-            currentValue = content.substring(i, nextCommaIndex).trim();
-            processField(movieObj, currentKey, currentValue);
-            i = nextCommaIndex + 2; // Di chuyển qua dấu phẩy và khoảng trắng
+  const moviesJSON = [];
+
+  moviesData.forEach(movieStr => {
+    // Loại bỏ "Movie [" ở đầu và "]" hoặc "]\r" ở cuối
+    const content = movieStr.replace(/^Movie \[/, '').replace(/\]\r?$/, '');
+
+    const keyValuePairs = [];
+    let current = '';
+    let inValue = false;
+
+    for (let i = 0; i < content.length; i++) {
+      const char = content[i];
+      if (char === ',' && !inValue) {
+        keyValuePairs.push(current.trim());
+        current = '';
+      } else {
+        if (char === '=' && !inValue) {
+          inValue = true;
+        } else if (char === ',' && content[i + 1] === ' ') {
+          // kiểm tra có phải kết thúc một key-value không
+          const nextEqual = content.indexOf('=', i + 1);
+          const nextComma = content.indexOf(', ', i + 1);
+          if (nextEqual !== -1 && (nextComma === -1 || nextEqual < nextComma)) {
+            keyValuePairs.push(current.trim());
+            current = '';
+            i++; // bỏ qua khoảng trắng
             inValue = false;
+            continue;
           }
         }
+        current += char;
       }
-      
-      moviesJSON.push(movieObj);
+    }
+    if (current) keyValuePairs.push(current.trim());
+
+    const movieObj = {};
+    keyValuePairs.forEach(pair => {
+      const [key, ...valueParts] = pair.split('=');
+      const keyTrimmed = key.trim();
+      const value = valueParts.join('=').trim(); // phòng trường hợp có dấu '=' trong value
+      processField(movieObj, keyTrimmed, value);
     });
-    
-    return moviesJSON;
-  }
-  
+
+    moviesJSON.push(movieObj);
+  });
+
+  return moviesJSON;
+}
+
   // Hàm xử lý các trường dữ liệu đặc biệt
   function processField(movieObj, key, value) {
     switch (key) {
@@ -199,48 +192,56 @@ app.get('/recommend', (req, res) => {
 
 app.get('/api/get-recommendations/:user_id', async (req, res) => {
   const raterId = req.params.user_id;
-  const command = `java -cp "recommend.jar;lib/commons-csv-1.10.0.jar" RecommendationRunner ${raterId}`;
+  const genreFilter = req.query.genre; // lấy genre từ query nếu có
+
+  // Tùy điều kiện mà chạy lệnh Java khác nhau
+  const command = genreFilter
+    ? `java -cp "recommend.jar;lib/commons-csv-1.10.0.jar" MovieRunnerSimilarRatings ${raterId} ${genreFilter}`
+    : `java -cp "recommend.jar;lib/commons-csv-1.10.0.jar" RecommendationRunner ${raterId}`;
+  //console.log("raterID: " + raterId);
+  //console.log("genreFilter: " + genreFilter);
 
   exec(command, async (error, stdout, stderr) => {
-      if (error) {
-          console.error(`exec error: ${error}`);
-          return res.status(500).json({ error: 'Lỗi khi chạy RecommendationRunner' });
-      }
+    if (error) {
+      console.error(`exec error: ${error}`);
+      return res.status(500).json({ error: 'Lỗi khi chạy chương trình Java' });
+    }
+    //console.log('Java stdout:', stdout);
 
-      const moviesList = stdout.trim().split('\n');
-      const moviesJSON = convertMoviesToJSON(moviesList);
+    const moviesList = stdout.trim().split('\n');
+    const moviesJSON = convertMoviesToJSON(moviesList);
 
-      try {
-          // Gọi Java để lấy avgRating từng phim
-          const enrichedMovies = await Promise.all(moviesJSON.map(movie => {
-              return new Promise((resolve, reject) => {
-                  const cmd = `java -cp "recommend.jar;lib/commons-csv-1.10.0.jar" MovieRunnerAverage ${movie.id}`;
-                  exec(cmd, (err, avgOut, avgErr) => {
-                      if (err) {
-                          console.error(`Error getting avgRating for ${movie.id}:`, err);
-                          return resolve({ ...movie, avgRating: null }); // fallback
-                      }
+    try {
+      const enrichedMovies = await Promise.all(moviesJSON.map(movie => {
+        return new Promise((resolve, reject) => {
+          const cmd = `java -cp "recommend.jar;lib/commons-csv-1.10.0.jar" MovieRunnerAverage ${movie.id}`;
+          exec(cmd, (err, avgOut, avgErr) => {
+            if (err) {
+              console.error(`Error getting avgRating for ${movie.id}:`, err);
+              return resolve({ ...movie, avgRating: null });
+            }
 
-                      try {
-                          const avgJson = JSON.parse(avgOut.trim());
-                          resolve({ ...movie, avgRating: avgJson.avgRating });
-                      } catch (parseErr) {
-                          console.error('Lỗi khi parse JSON:', parseErr);
-                          resolve({ ...movie, avgRating: null }); // fallback
-                      }
-                  });
-              });
-          }));
+            try {
+              const avgJson = JSON.parse(avgOut.trim());
+              resolve({ ...movie, avgRating: avgJson.avgRating });
+            } catch (parseErr) {
+              console.error('Lỗi khi parse JSON:', parseErr);
+              resolve({ ...movie, avgRating: null });
+            }
+          });
+        });
+      }));
 
-          const withPoster = await fetchMoviePoster(enrichedMovies);
-          res.json({ moviesJSON: withPoster });
+      const withPoster = await fetchMoviePoster(enrichedMovies);
+      res.json({ moviesJSON: withPoster });
 
-      } catch (err) {
-          console.error('Lỗi khi xử lý movie list:', err);
-          res.status(500).send('Không thể xử lý danh sách phim.');
-      }
+    } catch (err) {
+      console.error('Lỗi khi xử lý movie list:', err);
+      res.status(500).send('Không thể xử lý danh sách phim.');
+    }
   });
 });
+
 
 app.get('/api/get-my-ratings/:user_id', async (req,res)=>{
   const raterId = req.params.user_id;
@@ -298,4 +299,27 @@ app.get('/api/search-movie', async (req, res) => {
       res.status(500).json({ error: 'Không thể tìm kiếm phim' });
   }
 });
+
+app.get('/api/get-all-genres',async (req,res)=>{
+  const command = `java -cp "recommend.jar;lib/commons-csv-1.10.0.jar" MovieDatabase`;
+
+  exec(command, async (error, stdout, stderr) => {
+      if (error) {
+          console.error(`exec error: ${error}`);
+          return res.status(500).json({ error: 'Lỗi khi chạy Java' });
+      }
+      const genresList = stdout.trim().split('\n');
+      const cleanGenres = genresList
+        .map(g => g.trim())       // Loại bỏ \r, khoảng trắng thừa
+        .filter(g => g !== "N/A"); // Loại bỏ "N/A"
+
+      try {
+        res.json(cleanGenres);
+          
+      } catch (err) {
+          console.error('Lỗi khi fetch thông tin phim tất cả genre:', err);
+          res.status(500).send('Không thể lấy thông tin tất cả phim.');
+      }
+  });
+})
 

@@ -95,4 +95,26 @@ public class MovieDatabase {
         }
         return list;
     }
+
+    public static HashSet<String> getAllGenres() {
+        initialize(); // Đảm bảo dữ liệu đã được load
+        HashSet<String> genres = new HashSet<>();
+    
+        for (Movie m : ourMovies.values()) {
+            String genreLine = m.getGenres(); // ví dụ: "Action, Comedy"
+            String[] splitGenres = genreLine.split(",");
+            for (String g : splitGenres) {
+                genres.add(g.trim()); // bỏ khoảng trắng thừa
+            }
+        }
+    
+        return genres;
+    }
+    
+    public static void main(String[] args){
+        HashSet<String> genres = getAllGenres();
+        for(String g : genres){
+            System.out.println(g);
+        }
+    }
 }

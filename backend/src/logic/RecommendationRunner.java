@@ -29,7 +29,7 @@ public class RecommendationRunner implements Recommender {
     
     public void printRecommendationsFor(String webRaterID) {
         FourthRatings fourthrating = new FourthRatings();
-        ArrayList<Rating> rcm = fourthrating.getSimilarRatings(webRaterID, 100, 0);
+        ArrayList<Rating> rcm = fourthrating.getSimilarRatings(webRaterID, 100, 1);
         
         int limit = Math.min(10,rcm.size());
 

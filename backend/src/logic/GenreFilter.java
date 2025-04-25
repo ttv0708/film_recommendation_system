@@ -7,7 +7,8 @@ public class GenreFilter  implements Filter {
     
     @Override
     public boolean satisfies(String id) {
-        return MovieDatabase.getGenres(id).contains(myGenre);
+        String genres = MovieDatabase.getGenres(id);
+        return genres.toLowerCase().contains(myGenre.toLowerCase());
     }
 
 }

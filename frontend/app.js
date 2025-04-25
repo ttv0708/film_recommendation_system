@@ -181,6 +181,7 @@ function openTab(tabId) {
 
     if (tabId === 'tab3') {
         loadRecommendations();
+        fetchGenres();
     }
     
     if (tabId === 'tab2') {
@@ -246,3 +247,82 @@ document.getElementById('search-button').addEventListener('click', () => {
             alert('Đã xảy ra lỗi khi tìm kiếm phim.');
         });
 });
+
+async function fetchGenres() {
+    try {
+      // Fetch genres from API
+      const response = await fetch('http://localhost:3000/api/get-all-genres');
+      const genres = await response.json();
+      
+      // Get the container and clear any existing content
+      const filterContainer = document.getElementById('genre-filter');
+      filterContainer.innerHTML = '';
+      
+      // Create the toggle button
+      const toggleDiv = document.createElement('div');
+      toggleDiv.className = 'genre-toggle';
+      
+      const toggleIcon = document.createElement('span');
+      toggleIcon.className = 'toggle-icon';
+      toggleIcon.textContent = '+';
+      
+      const toggleText = document.createElement('span');
+      toggleText.className = 'toggle-text';
+      toggleText.textContent = 'Chọn thể loại';
+      
+      toggleDiv.appendChild(toggleIcon);
+      toggleDiv.appendChild(toggleText);
+      
+      // Create the genre list
+      const genreList = document.createElement('div');
+      genreList.className = 'genre-list';
+      
+      // Add genres to the list
+      genres.forEach(genre => {
+        const div = document.createElement('div');
+        div.className = 'genre';
+        div.textContent = genre;
+      
+        div.addEventListener('click', function(e) {
+          e.stopPropagation(); // Ngăn sự kiện lan truyền
+      
+          // Bỏ class 'selected' khỏi tất cả các genre khác
+          const allGenres = document.querySelectorAll('.genre');
+          allGenres.forEach(g => g.classList.remove('selected'));
+      
+          // Gán class 'selected' cho genre vừa được click
+          this.classList.add('selected');
+      
+          // Gọi logic lọc phim nếu cần
+          console.log(`Genre ${genre} selected`);
+        });
+      
+        genreList.appendChild(div);
+      });
+      
+      
+      // Add toggle functionality
+      toggleDiv.addEventListener('click', function() {
+        // Toggle classes for styling
+        this.classList.toggle('active');
+        genreList.classList.toggle('show');
+        
+        // Update the toggle icon
+        toggleIcon.textContent = genreList.classList.contains('show') ? '−' : '+';
+      });
+      
+      // Append elements to the container
+      filterContainer.appendChild(toggleDiv);
+      filterContainer.appendChild(genreList);
+      
+      console.log('Genre filter initialized with', genres.length, 'genres');
+      
+    } catch (err) {
+      console.error('Lỗi khi tải thể loại:', err);
+      
+      // Display error in the UI
+      const filterContainer = document.getElementById('genre-filter');
+      filterContainer.innerHTML = '<div class="error-message">Error loading genres. Please try again later.</div>';
+    }
+  }
+  

@@ -10,14 +10,14 @@ public class RaterDatabase {
         // this method is only called from addRatings 
         if (ourRaters == null) {
             ourRaters = new HashMap<String,Rater>();
-            addRatings("data/ratings.csv");
+            addRatings("./data/ratings.csv");
         }
     }
     
     public static void initialize(String filename) {
          if (ourRaters == null) {
              ourRaters= new HashMap<String,Rater>();
-             addRatings("data/" + filename);
+             addRatings("./data/" + filename);
          }
      }    
     

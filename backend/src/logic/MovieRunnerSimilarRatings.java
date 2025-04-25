@@ -84,18 +84,6 @@ public class MovieRunnerSimilarRatings {
         }
     }
     
-    public void printSimilarRatingsByGenre(){
-        FourthRatings fourthRating = new FourthRatings();
-        //ArrayList<Rating> list =  fourthRating.getSimilarRatings("1",4,4);
-        RaterDatabase.initialize("ratings.csv");
-        System.out.println("the number of raters: " + RaterDatabase.size());
-        MovieDatabase.initialize("ratedmoviesfull.csv");
-        System.out.println("The number of movies: " + MovieDatabase.size());
-        GenreFilter gFilter = new GenreFilter("Mystery");
-        ArrayList<Rating> list = fourthRating.getSimilarRatingsByFilter("946",20,5,gFilter);
-        printSimilarRatingsList(list);
-    }
-    
     public void printSimilarRatingsListByDirector(ArrayList<Rating> ratingList){
         //Collections.sort(ratingList);
         System.out.println("found " + ratingList.size() + "movies");
@@ -185,5 +173,35 @@ public class MovieRunnerSimilarRatings {
         
         ArrayList<Rating> list = fourthRating.getSimilarRatingsByFilter("314",10,5,aFilter);
         printSimilarRatingsList(list);
+    }
+
+    public void printSimilarRatingsByGenre(String userID, String genre){
+        FourthRatings fourthRating = new FourthRatings();
+        RaterDatabase.initialize("ratings.csv");
+        MovieDatabase.initialize("ratedmoviesfull.csv");
+        
+        GenreFilter gFilter = new GenreFilter(genre);
+        ArrayList<Rating> list = fourthRating.getSimilarRatingsByFilter(userID,100,1,gFilter);
+
+        //System.out.println("Found " + list.size() + " movies");
+
+        int limit = Math.min(10, list.size());
+
+        for (int i = 0; i < limit; i++) {
+            String movieID = list.get(i).getItem();
+            //System.out.println("movieID: " + movieID);
+            System.out.println(MovieDatabase.getMovie(movieID));
+        }
+    }
+    public static void main(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Thiếu user_id hoặc movie genre");
+            return;
+        }
+        String userId = args[0];
+        String movieGenre = args[1];
+        MovieRunnerSimilarRatings runner = new MovieRunnerSimilarRatings();
+
+        runner.printSimilarRatingsByGenre(userId, movieGenre);
     }
 }

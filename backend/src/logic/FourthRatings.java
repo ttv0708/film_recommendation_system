@@ -3,7 +3,7 @@ import java.util.*;
 public class FourthRatings {
     //As we can see, every instance variable has been eliminated as requested
     public FourthRatings() {
-        this("data/ratings.csv");
+        this("ratings.csv");
     }
     
     public FourthRatings(String ratingsfile){
@@ -258,24 +258,29 @@ public class FourthRatings {
    public ArrayList<Rating> getSimilarRatingsByFilter(String id, int numSimilarRaters, int minimalRaters, Filter filterCriteria){
         try{
         ArrayList<Rating> similarRatings = getSimilarities(id);
+        if (similarRatings == null || similarRatings.isEmpty()) {
+            System.out.println("similarRatings is empty.");
+            return new ArrayList<>();
+        }
+
         ArrayList<Rating> getRatings = new ArrayList<Rating>();
         //Same method as before, but as easy as running a filterCriteria.
         ArrayList<String> movies = MovieDatabase.filterBy(filterCriteria);
-        double numratings = 0;
+        //System.out.println("filter size: " + movies.size());
+        //return similarRatings;
+        int limit = Math.min(numSimilarRaters, similarRatings.size());
         HashMap<String,ArrayList<Double>>favRaters = new HashMap<String,ArrayList<Double>>();
         for(String movieID : movies){
-            for(int i=0; i<numSimilarRaters; i++){
+            for(int i=0; i<limit; i++){
                 Rating r = similarRatings.get(i);
-                //r(i) es el top de cada rater_id con su coef
-                //System.out.println(r);
-                //este coef tiene que estar multiplicado por cada peli en comun. 
+                
                 double coef = r.getValue();
-                //este es cada rater afin:
+                
                 String rater_id = r.getItem();
                 ArrayList<Rater> Raters = RaterDatabase.getRaters();
                 
                 for(Rater rat : Raters){
-                    //HashMap<String,Rating> Ratings = rat.getRatingList();
+                   
                     HashMap<String, Rating> Ratings = new HashMap<>();
                     for (String item : rat.getItemsRated()) {
                         double value = rat.getRating(item);
@@ -283,24 +288,13 @@ public class FourthRatings {
                     }
                     if(rater_id.equals(rat.getID())){
                         for(Rating rats : Ratings.values()){
-                            //Si la peli la han votado mis almas gemelas:
                             if(rats.getItem().equals(movieID)){
-                                //System.out.println("Esta peli: " + rats.getItem() + " y esta " + movieID + 
-                                                   //"la ha visto este id " + rater_id);
-                                 //Si mi ranking no tiene la peli, añade peli y coef
                                 ArrayList<Double> coefs = new ArrayList<Double>();
                                 if(!favRaters.containsKey(rats.getItem())){
-                                    /*System.out.println("Añado peli y coef que sin multip es " + coef 
-                                            + " porque " + rat.getID() + " ha visto " + movieID + " y le puso una nota de " 
-                                            +rats.getValue());*/
                                     coefs.add(coef*rats.getValue());
                                     favRaters.put(rats.getItem(),coefs);
                                 }
-                                //Si ya la tiene, añade el coef
                                 else{
-                                    /*System.out.println("****Añado coeff a peli que sin multip es " + coef + " porque " 
-                                        + rat.getID() + " tambien ha visto " + movieID+ " y le puso una nota de "
-                                        +rats.getValue());*/
                                     ArrayList<Double> mine = favRaters.get(rats.getItem());
                                     mine.add(coef*rats.getValue());
                                     favRaters.put(rats.getItem(),mine);
@@ -328,5 +322,5 @@ public class FourthRatings {
            System.out.println("One of the variables is out of bounds, insert smaller parameter variables or another user");
            return null;
        }
-   }
+    }
 }
