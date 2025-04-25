@@ -130,6 +130,47 @@ function loadRecommendations() {
         });
 }
 
+function loadRecommendationsByGenre(genre) {
+    const raterId = getRaterId();
+    fetch(`http://localhost:3000/api/get-recommendations/${raterId}?genre=${encodeURIComponent(genre)}`)
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.getElementById('movie-recommendation-table');
+            tbody.innerHTML = ''; // Xoá phim cũ trước khi render mới
+
+            data.moviesJSON.forEach((movie, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${movie.id}</td>
+                    <td>${movie.title}</td>
+                    <td>${movie.poster ? `<img src="${movie.poster}" style="max-width:100px" />` : 'N/A'}</td>
+                    <td>${movie.year}</td>
+                    <td>${movie.genres}</td>
+                    <td>${movie.country}</td>
+                    <td>${movie.directors}</td>
+                    <td>${movie.minutes}</td>
+                    <td class="rating-cell" data-index="${index}"></td>
+                `;
+                tbody.appendChild(tr);
+                
+                const ratingCell = tr.querySelector('.rating-cell');
+                for (let i = 1; i <= 10; i++) {
+                    const star = document.createElement('span');
+                    star.innerHTML = '★';
+                    star.style.cursor = 'pointer';
+                    star.style.color = i <= Math.round(movie.avgRating) ? 'gold' : 'gray';
+                    star.dataset.value = i;
+                    ratingCell.appendChild(star);
+                }
+                alert("Load phim theo the loai thanh cong.");
+            });
+        })
+        .catch(err => {
+            console.error('Lỗi khi lọc phim theo thể loại:', err);
+            alert('Không thể lọc phim theo thể loại!');
+        });
+}
+
 function loadMyRatings() {
     const raterId = getRaterId();
     fetch(`http://localhost:3000/api/get-my-ratings/${raterId}`)
@@ -180,8 +221,8 @@ function openTab(tabId) {
     if (active) active.classList.add('active');
 
     if (tabId === 'tab3') {
-        loadRecommendations();
         fetchGenres();
+        loadRecommendations();
     }
     
     if (tabId === 'tab2') {
@@ -284,18 +325,23 @@ async function fetchGenres() {
         div.textContent = genre;
       
         div.addEventListener('click', function(e) {
-          e.stopPropagation(); // Ngăn sự kiện lan truyền
-      
-          // Bỏ class 'selected' khỏi tất cả các genre khác
-          const allGenres = document.querySelectorAll('.genre');
-          allGenres.forEach(g => g.classList.remove('selected'));
-      
-          // Gán class 'selected' cho genre vừa được click
-          this.classList.add('selected');
-      
-          // Gọi logic lọc phim nếu cần
-          console.log(`Genre ${genre} selected`);
+            e.stopPropagation(); // Ngăn sự kiện lan truyền
+        
+            const wasSelected = this.classList.contains('selected');
+        
+            // Bỏ class 'selected' khỏi tất cả các genre
+            const allGenres = document.querySelectorAll('.genre');
+            allGenres.forEach(g => g.classList.remove('selected'));
+        
+            if (!wasSelected) {
+                this.classList.add('selected');
+                loadRecommendationsByGenre(genre); // Load theo thể loại mới chọn
+                
+            } else {
+                loadRecommendations(); // Nếu bấm để bỏ chọn
+            }
         });
+        
       
         genreList.appendChild(div);
       });
