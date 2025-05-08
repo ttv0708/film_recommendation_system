@@ -5,9 +5,12 @@ const fetchMoviePoster = require('./src/fetchMoviePoster');
 const app = express();
 const port = 3000;
 const csv = require('csv-parser');
+const fs = require('fs');
+const path = require('path');
+const { stderr } = require('process');
 
 app.use(cors());
-
+app.use(express.json()); // Thêm nếu chưa có
 
 function convertMoviesToJSON(moviesData) {
   const moviesJSON = [];
@@ -101,32 +104,19 @@ app.get('/api/recommendations', async (req, res) => {
             console.error(`Lỗi Java stderr: ${stderr}`);
             return res.status(500).send('Lỗi từ Java');
         }
-
+        //console.log('stdout:', stdout);
         const moviesList = stdout.trim().split('\n');
         const moviesJSON = convertMoviesToJSON(moviesList);
 
         try {
             const moviesListWithPoster = await fetchMoviePoster(moviesJSON);
             res.json({ moviesJSON: moviesListWithPoster });
-            
-            //console.log(moviesJSON);
-            //res.json({ recommendations: moviesList });
         } catch (err) {
             console.error('Lỗi khi fetch thông tin phim:', err);
             res.status(500).send('Không thể lấy thông tin phim');
         }
     });
 });
-
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
-
-const fs = require('fs');
-const path = require('path');
-const { stderr } = require('process');
-
-app.use(express.json()); // Thêm nếu chưa có
 
 app.post('/api/submit-rating', (req, res) => {
     const { rater_id, movie_id, rating, time } = req.body;
@@ -323,3 +313,6 @@ app.get('/api/get-all-genres',async (req,res)=>{
   });
 })
 
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
